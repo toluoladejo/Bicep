@@ -23,10 +23,10 @@ From the repository root, run PowerShell after signing in with `az login`:
 ```powershell
 az login
 $subscriptionId = az account show --query id -o tsv
-./scripts/setup-azure-auth-for-pipeline.ps1 -GitHubOwner '<owner-or-org>' -GitHubRepository '<repository>' -SubscriptionId $subscriptionId -GitHubBranch 'main'
+./scripts/setup-azure-auth-for-pipeline.ps1 -GitHubOwner 'toluoladejo' -GitHubRepository 'Bicep' -GitHubOwnerId '94096111' -GitHubRepositoryId '1396206059' -SubscriptionId $subscriptionId -GitHubBranch 'main'
 ```
 
-The script creates the target and separate identity resource groups, deploys a user-assigned identity, configures its federated credential for `repo:<owner>/<repository>:ref:refs/heads/main`, and grants it Contributor on the target resource group only. Rerun this script to replace the earlier environment-based federated credential. If your default branch is not `main`, pass it with `-GitHubBranch` and update the workflow branch condition to match. The signed-in Azure user needs permission to create resource groups and assign roles at the target resource-group scope; an Owner or User Access Administrator role is typically required for role assignment.
+The numeric GitHub owner and repository IDs are part of the OIDC subject Azure receives. For this repository the subject is `repo:toluoladejo@94096111/Bicep@1396206059:ref:refs/heads/main`. Rerun the script to update the existing federated credential to that exact subject. The script creates the target and separate identity resource groups as needed and grants the identity Contributor on the target resource group only. If your default branch is not `main`, pass its name with `-GitHubBranch` and update the workflow's branch condition to match. The signed-in Azure user needs permission to create resource groups and assign roles; an Owner or User Access Administrator role is typically required for role assignment.
 
 ## 2. Configure repository Actions variables
 

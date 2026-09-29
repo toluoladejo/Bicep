@@ -9,6 +9,12 @@ param githubOwner string
 @description('GitHub repository name.')
 param githubRepository string
 
+@description('Numeric GitHub owner ID included in the GitHub OIDC subject.')
+param githubOwnerId string
+
+@description('Numeric GitHub repository ID included in the GitHub OIDC subject.')
+param githubRepositoryId string
+
 @description('Target resource group where GitHub Actions will deploy infrastructure.')
 param targetResourceGroupName string
 
@@ -34,7 +40,7 @@ resource githubFederatedCredential 'Microsoft.ManagedIdentity/userAssignedIdenti
   name: 'azfc${identityToken}'
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:${githubOwner}/${githubRepository}:ref:refs/heads/${githubBranch}'
+    subject: 'repo:${githubOwner}@${githubOwnerId}/${githubRepository}@${githubRepositoryId}:ref:refs/heads/${githubBranch}'
     audiences: [
       'api://AzureADTokenExchange'
     ]

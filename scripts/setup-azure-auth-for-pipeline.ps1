@@ -6,6 +6,12 @@ param(
     [string] $GitHubRepository,
 
     [Parameter(Mandatory = $true)]
+    [string] $GitHubOwnerId,
+
+    [Parameter(Mandatory = $true)]
+    [string] $GitHubRepositoryId,
+
+    [Parameter(Mandatory = $true)]
     [string] $SubscriptionId,
 
     [string] $GitHubBranch = 'main',
@@ -42,6 +48,8 @@ $templatePath = Join-Path $PSScriptRoot '..\infra\pipeline-identity.bicep'
     --parameters location=$Location `
         githubOwner=$GitHubOwner `
         githubRepository=$GitHubRepository `
+        githubOwnerId=$GitHubOwnerId `
+        githubRepositoryId=$GitHubRepositoryId `
         githubBranch=$GitHubBranch `
         targetResourceGroupName=$TargetResourceGroup `
     --output json
@@ -59,4 +67,5 @@ Write-Host "AZURE_RESOURCE_GROUP=$TargetResourceGroup"
 Write-Host 'ADMIN_SSH_PUBLIC_KEY=<your OpenSSH public key>'
 Write-Host 'VM_ADMIN_USERNAME=azureuser'
 Write-Host ''
-Write-Host "GitHub OIDC is restricted to branch '$GitHubBranch'. The identity has Contributor on the target resource group only."
+Write-Host "GitHub OIDC is restricted to '$GitHubOwner/$GitHubRepository' (owner ID $GitHubOwnerId, repository ID $GitHubRepositoryId) on branch '$GitHubBranch'."
+Write-Host 'The identity has Contributor on the target resource group only.'
