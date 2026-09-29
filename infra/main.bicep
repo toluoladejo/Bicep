@@ -8,7 +8,6 @@ param location string
 @maxLength(8)
 param environmentName string = 'dev'
 
-@description('VM size. Standard_B1s is a low-cost dev choice; confirm subscription eligibility.')
 @description('VM size available to this subscription in the selected region.')
 param vmSize string
 
