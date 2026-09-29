@@ -1,0 +1,73 @@
+name: Deploy infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: Subscription-enabled Azure region for the dev infrastructure
+        required: true
+        type: string
+      vm_size:
+        description: VM size enabled for your subscription in the selected region
+        required: true
+        type: string
+      ssh_source_cidr:
+        description: Your public IPv4 address in CIDR form, normally x.x.x.x/32
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-dev:
+    name: Deploy dev infrastructure
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      ADMIN_SSH_PUBLIC_KEY: ${{ vars.ADMIN_SSH_PUBLIC_KEY }}
+      VM_ADMIN_USERNAME: ${{ vars.VM_ADMIN_USERNAME }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate deployment inputs
+        shell: bash
+        env:
+          SSH_SOURCE_CIDR: ${{ inputs.ssh_source_cidr }}
+          VM_SIZE: ${{ inputs.vm_size }}
+        run: |
+          set -euo pipefail
+          test -n "$RESOURCE_GROUP" || { echo "AZURE_RESOURCE_GROUP is required"; exit 1; }
+          test -n "$ADMIN_SSH_PUBLIC_KEY" || { echo "ADMIN_SSH_PUBLIC_KEY is required"; exit 1; }
+          test -n "$VM_ADMIN_USERNAME" || { echo "VM_ADMIN_USERNAME is required"; exit 1; }
+          test -n "$VM_SIZE" || { echo "A verified VM size is required"; exit 1; }
+          python -c 'import ipaddress, sys; network = ipaddress.ip_network(sys.argv[1], strict=False); assert network.version == 4 and network.prefixlen >= 16, "use one IPv4 CIDR no broader than /16"' "$SSH_SOURCE_CIDR"
+
+      - name: Compile and deploy Bicep
+        shell: bash
+        env:
+          SSH_SOURCE_CIDR: ${{ inputs.ssh_source_cidr }}
+          LOCATION: ${{ inputs.location }}
+          VM_SIZE: ${{ inputs.vm_size }}
+        run: |
+          set -euo pipefail
+          az bicep build --file infra/main.bicep --stdout >/dev/null
+          az deployment group create \
+            --name "dev-infra-${GITHUB_RUN_ID}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters @infra/main.parameters.json \
+              location="$LOCATION" \
+              vmSize="$VM_SIZE" \
+              adminSshCidr="$SSH_SOURCE_CIDR" \
+              adminSshPublicKey="$ADMIN_SSH_PUBLIC_KEY"
