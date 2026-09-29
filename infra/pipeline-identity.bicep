@@ -24,6 +24,8 @@ param githubBranch string = 'main'
 var identityToken = uniqueString(subscription().id, resourceGroup().id, location, 'github')
 var identityName = 'azmi${identityToken}'
 var contributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')
+var rbacAdminRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f58310d9-a9f6-439a-9e8d-f62e7b41a168')
+var delegatedRoleAssignmentCondition = '''((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {ba92f5b4-2d11-453d-a403-e96b0029c9fe} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'ServicePrincipal'})) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {ba92f5b4-2d11-453d-a403-e96b0029c9fe} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'ServicePrincipal'}))'''
 
 resource targetResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' existing = {
   name: targetResourceGroupName
@@ -53,6 +55,16 @@ module targetGroupContributor 'role-assignment.bicep' = {
   params: {
     principalId: pipelineIdentity.properties.principalId
     roleDefinitionId: contributorRoleId
+  }
+}
+
+module targetGroupBlobRoleDelegation 'delegated-role-assignment.bicep' = {
+  name: 'azdel${identityToken}'
+  scope: targetResourceGroup
+  params: {
+    principalId: pipelineIdentity.properties.principalId
+    roleDefinitionId: rbacAdminRoleId
+    condition: delegatedRoleAssignmentCondition
   }
 }
 
