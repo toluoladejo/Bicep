@@ -24,7 +24,7 @@ jobs:
   deploy-dev:
     name: Deploy dev infrastructure
     runs-on: ubuntu-latest
-    environment: dev
+    if: github.ref == 'refs/heads/main'
     env:
       RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       ADMIN_SSH_PUBLIC_KEY: ${{ vars.ADMIN_SSH_PUBLIC_KEY }}

@@ -12,8 +12,8 @@ param githubRepository string
 @description('Target resource group where GitHub Actions will deploy infrastructure.')
 param targetResourceGroupName string
 
-@description('GitHub Actions environment name used by the OIDC subject.')
-param githubEnvironment string = 'dev'
+@description('Git branch allowed to authenticate through GitHub OIDC.')
+param githubBranch string = 'main'
 
 var identityToken = uniqueString(subscription().id, resourceGroup().id, location, 'github')
 var identityName = 'azmi${identityToken}'
@@ -34,7 +34,7 @@ resource githubFederatedCredential 'Microsoft.ManagedIdentity/userAssignedIdenti
   name: 'azfc${identityToken}'
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:${githubOwner}/${githubRepository}:environment:${githubEnvironment}'
+    subject: 'repo:${githubOwner}/${githubRepository}:ref:refs/heads/${githubBranch}'
     audiences: [
       'api://AzureADTokenExchange'
     ]
