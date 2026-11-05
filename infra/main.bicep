@@ -116,7 +116,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2024-05-01' = {
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageName
-  location: location
+  location: 'eastus2'
   sku: {
     name: 'Standard_LRS'
   }
